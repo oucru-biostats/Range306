@@ -1,0 +1,16 @@
+Package: ranger306
+Type: Package
+Title: A collection of contraints to be used for data cleaning process. 
+Version: 0.1.0
+Author: Trinh Dong
+Maintainer: Trinh Dong <trinhdong_0629@outlook.com>
+Description: |
+  This package contains several constraints for numbers, characters, sets, which can make data cleaning tasks more robust and less heavy.
+  All classes are based on R6.
+License: The MIT License (MIT)
+Encoding: UTF-8
+LazyData: true
+Imports: R6, magrittr
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.1.1
