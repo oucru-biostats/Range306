@@ -1,0 +1,7 @@
+packrat/lib*/
+.Rproj.user
+.Rbuildignore
+.RData
+.Rhistory
+.Rprofile
+NumRange2.R
