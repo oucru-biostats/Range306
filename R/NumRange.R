@@ -51,7 +51,6 @@
 #'
 #' Note that $new, $include, $print(raw = FALSE) will accept method chaining.
 #'
-#' @export
 .NumRange <- R6::R6Class('.NumRange',
                         public = list(
                           lower = NA,
@@ -290,7 +289,6 @@
 #'
 #' Other form won't be accepted.
 #'
-#' @export
 as_.NumRange <- as..NumRange <- function(x){
   .NumRange$new(text=x)
 }
@@ -301,7 +299,6 @@ as_.NumRange <- as..NumRange <- function(x){
 #' @param x An object to check
 #' @return A logical vector of length==length(x)
 #'
-#' @export
 is_.NumRange <- is..NumRange <- function(x){
   ".NumRange" %in% class(x)
 }
