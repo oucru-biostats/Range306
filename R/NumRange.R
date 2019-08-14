@@ -1,4 +1,4 @@
-#' Continuous Numeric Range Class
+#' R6 Class Generator for Continuous Numeric Range
 #'
 #' @description An R6 object for continuous numeric ranges
 #' @usage
@@ -158,7 +158,7 @@
                             })
                           },
 
-                          del = function(range){
+                          antiunion_with = function(range){
                             if (is_.NumRange(range)) return(private$.del(range))
                             if (is.character(range)) return(private$.del(.NumRange$new(text=range)))
                             warning('Unrecognized format. NA returned.')
@@ -207,14 +207,15 @@
                             mode <- range$Mode
                             self.mode <- private$mode
 
-
-                            if (is_NullRange(intersectRange) && lower != self$upper && upper != self$lower)
-                              return(NumRange$new(self, range, simplify = FALSE))
-
                             if ('collapsed' %in% mode) mode <- c('min', 'max')
                             else mode <- c(mode[mode %in% c('min', 'inf')], mode[mode %in% c('max', 'sup')])
                             if ('collapsed' %in% self.mode) self.mode <- c('min', 'max')
                             else self.mode <- c(self.mode[self.mode %in% c('min', 'inf')], self.mode[self.mode %in% c('max', 'sup')])
+
+                            if (is_NullRange(intersectRange) &&
+                                ((lower == self$upper && mode[[1]] == 'inf' && self.mode[[2]] == 'sup') ||
+                                 (upper == self$lower && (mode[[2]] == 'sup' || self.mode[[1]] == 'inf'))))
+                              return(NumRange$new(self, range, simplify = FALSE))
 
                             allRange <- sort(c(lower, upper, self$lower, self$upper))
                             newLower <- allRange[1]
@@ -305,31 +306,5 @@ is_.NumRange <- is..NumRange <- function(x){
   ".NumRange" %in% class(x)
 }
 
-#' Union 2 objects
-#' @description A function to union 2 object, now support method and NumRange
-#' @param x,y Two objects to be unioned.
-#' @export
-union <- function(x, y){
-  UseMethod('union')
-}
-
-#' Union 2 NumRange objects
-#' @description A S3 method to union 2 NumRange object, which is in fact a wrapper for R6 method $union_with
-#' @param x,y Two NumRange objects to be unioned.
-#' @export
-union..NumRange <- function(x, y){
-  if (is.character(x)) x <- .NumRange$new(text=x)
-  if (is.character(y)) y <- .NumRange$new(text=y)
-
-  x$union_with(y)
-}
-
-#' Union 2 objects
-#' @description A function to union 2 object, now support method and NumRange
-#' @param x,y Two objects to be unioned.
-#' @export
-union.default <- function(x, y){
-  base::union(x, y)
-}
 
 

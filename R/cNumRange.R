@@ -1,32 +1,49 @@
-#' Combined Continuous Numeric Range
+#' R6 Class Generator for Continuous Numeric Range
 #'
 #' @description An R6 object for combined continuous numeric ranges
 #' @usage
-#' cNumRange
+#' NumRange
 #'  $new(..., list)
 #'  $clone()
 #'  $include(x)
+#'  $cover(range)
+#'  $covered_by(range)
 #'  $cut(..., mode)
 #'  $extract(id)
-#'  $del(range)
+#'  $intersect_with(range)
+#'  $union_with(range)
+#'  $antiunion_with(range)
 #'  $print()
 #'
+#' @method $print
 #' @param ...
 #' For method 'new': spreaded list of NumRange.
 #' For method 'cut': spreaded list of split points
 #' @param id the number of element NumRange within the object. If left missing, the method will return all elements.
 #' @param list A list of NumRange. Used in case NumRanges are in a form of list.
 #' @param mode Mode for returned cutted NumRanges, if missing, defaults of element NumRanges are used.
-#' @param range A range that will be deleted from the host range.
+#' @param range A range that will be deleted from the host range, a valid character input can also be converted into NumRange, for convenience.
 #' @param x A numeric vector to check for inclusion.
 #'
-#' @return An object of R6Class "cNumRange"
+#' @return An object of R6Class "NumRange"
 #' @details
-#' This class is used when simple NumRange is not enough.
-#' It combines many NumRange into one, thus form a better constraint for complex data.
-#' You can take back the simple NumRanges as its elements by calling the extract method.
+#' This function create a numeric range, via which you can check if a specific number is included or not.
 #'
-#' Please refer to NumRange for more details.
+#' After creation, you can use some built-in methods.
+#'
+#' - $include will check if some provided numbers are included inside a range.
+#'
+#' - $arrrange will create a sequence for the range with a definded step.
+#'
+#' - $cut will cut the range into small range at the cutting point.
+#'
+#' - $print will print the range in a beautified way.
+#'
+#' - $union_with, $antiunion_with, and $intersect_with do union, anti_union, and intersect with a range.
+#'
+#' - $cover and $covered_by: a range is covered by another if all of it elements are included in the later.
+#'
+#' Note that $new, $include, $print(raw = FALSE) will accept method chaining.
 #' @importFrom magrittr %>%
 #' @export
 NumRange <-
@@ -83,11 +100,23 @@ NumRange <-
 
                   return(out)
                 },
-                del = function(range){
+                arrrange = function(step, simplify=FALSE){
+                  if (missing(step))
+                    out <- lapply(private$.list,
+                                  function(NR) NR$arrrange())
+                  else {
+                    step <- rep(step, length(private$.list))
+                    out <- lapply(seq_along(private$.list),
+                                  function(i) private$.list[[i]]$arrrange(step[[i]]))
+                  }
+                  if (simplify) return(unlist(out))
+                  return(out)
+                },
+                antiunion_with = function(range){
                   out <-
                     sapply(private$.list,
                            function(NR){
-                             return(NR$del(range))
+                             return(NR$antiunion_with(range))
                            }) %>% unlist
 
                   return(NumRange$new(.list=out))
@@ -100,9 +129,14 @@ NumRange <-
                       out <- out$union_with(all.NRs[[i]])
                   return(out)
                 },
-                includeRange = function(range){
+                covered_by = function(range){
+                  if (is.character(range)) range <- NumRange$new(range)
+                  range$cover(self)
+                },
+                cover = function(range){
+                  if (is.character(range)) range <- NumRange$new(range)
                   intersectRange <- self$intersect_with(range)
-                  is_identicalRange(self, intersectRange)
+                  is_identicalRange(intersectRange, range)
                 },
                 intersect_with = function(range){
                   if (is.character(range)) range <- .NumRange$new(text=range)
@@ -155,24 +189,107 @@ is_NumRange <- is.NumRange <- function(x){
   is_(x, 'NumRange')
 }
 
+#' Check if a numeric range is empty
+#'
+#' @aliases is.NullRange
+#' @param x a numeric range of R6Class 'NumRange'
+#' @return a logical value
 is_NullRange <- is.NullRange <- function(x){
   if (!is_(x, 'NumRange')) stop('x should be of class NumRange')
   all(is_null(x$extract()))
 }
 
-is_identicalRange <- function(x, y){
+#' Check if two numeric ranges are identical
+#' @aliases is.identicalRange
+#' @param x,y two numeric ranges of R6Class 'NumRange'
+#' @return a logical value
+is_identicalRange <- is.identicalRange <- function(x, y){
   if (!is_(x, 'NumRange')) stop('x should be of class NumRange')
   if (!is_(y, 'NumRange')) stop('y should be of class NumRange')
 
-  x <- x$extract()
-  y <- y$extract()
-  NR.grid <- expand.grid(x, y)
-  all(sapply(seq_along(nrow(NR.grid)),
-             function(i){
-               .x <- NR.grid[[i, 1]]
-               .y <- NR.grid[[i, 2]]
-               .x$lower == .y$lower & .x$upper == .y$upper & identical(.x$Mode, .y$Mode)
-             }))
+  x <- x$simplify()$extract()
+  y <- y$simplify()$extract()
+
+  all(
+    sapply(x,
+           function(.x){
+             any(sapply(y,
+                    function(.y){
+                      .x$lower == .y$lower && .x$upper == .y$upper && .x$Mode == .y$Mode
+                    }))
+           }),
+    length(x) == length(y)
+  )
 }
 
+#' Union 2 NumRange objects
+#' @description A wrapper to union 2 NumRange object, which is in fact a wrapper for R6 method $union_with
+#' @param x,y Two NumRange objects to be unioned.
+#' @return an object of R6Class 'NumRange'
+#' @export
+NR_union <- function(x, y){
+  if (is.character(x)) x <- NumRange$new(x)
+  if (is.character(y)) y <- NumRange$new(y)
 
+  x$union_with(y)
+}
+
+#' Intersect of 2 NumRange objects
+#' @description A wrapper for R6 method NumRange$intersect_with
+#' @param x,y Two NumRange objects to be intersected
+#' @return an object of R6Class 'NumRange'
+#' @export
+NR_intersect <- function(x, y){
+  if (is.character(x)) x <- NumRange$new(x)
+  if (is.character(y)) y <- NumRange$new(y)
+
+  x$intersect_with(y)
+}
+
+#' Anti union 2 NumRange objects
+#' @description A wrapper for R6 method NumRange$antiunion_with
+#' @param x,y Two NumRange objects to be anti-unioned
+#' @return an object of R6Class 'NumRange'
+#' @export
+NR_antiunion <- function(x, y){
+  if (is.character(x)) x <- NumRange$new(x)
+  if (is.character(y)) y <- NumRange$new(y)
+
+  x$antiunion_with(y)
+}
+
+#' Check if a numeric range is covered within another one
+#' @aliases is.covered_by
+#' @description A wrapper for R6 method NumRange$covered_by
+#' @param x A vector or object of R6class NumRange to be check, a valid character vector can be converted into NumRange object, for convenience.
+#' @param range A NumRange object, a valid character vector can be converted into NumRange object, for convenience.
+#' @return A logical vector
+#' @export
+is_covered_by <- is.covered_by <- function(x, range){
+  if (is.character(x)) x <- NumRange$new(x)
+  x$covered_by(range)
+}
+
+#' Check if a numeric range cover another one
+#' @description A wrapper for R6 method NumRange$cover
+#' @param x A vector or object of R6class NumRange to be check, a valid character vector can be converted into NumRange object, for convenience.
+#' @param range A NumRange object, a valid character vector can be converted into NumRange object, for convenience.
+#' @return A logical vector
+#' @export
+is_covered_by <- is.covered_by <- function(range, x){
+  if (is.character(range)) x <- NumRange$new(range)
+  range$cover(x)
+}
+
+#' Populate a numeric range into discrete sequence
+#' @description A wrapper for R6 method NumRange$arrrange
+#' @param range A NumRange object, a valid character vector can be converted into NumRange object, for convenience.
+#' @param step A vector of steps for each member range. Default is each range's (max-min)/10. Length of step should be 1 or number of member ranges.
+#' @param simplify Default is FALSE. TRUE for automatically unlist the result vector.
+#' @return A list of sequence if simiplify = FALSE or a sequence otherwise.
+#' @export
+arrrange <- function(range, step, simplify=FALSE){
+  if (is.character(range)) range <- NumRange$new(range)
+  if (!missing(step)) return(range$arrrange(step, simplify = simplify))
+  return(range$arrrange(simplify=simplify))
+}

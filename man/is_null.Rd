@@ -7,7 +7,10 @@
 is_null(x)
 }
 \arguments{
-\item{x}{a vector of objects}
+\item{x}{a vector or object}
+}
+\value{
+a logical vector
 }
 \description{
 Element-wise wrapper for is.null

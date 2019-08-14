@@ -11,6 +11,9 @@ is_(x, class)
 
 \item{class}{a vector of class. A value of FALSE, TRUE, and NULL will trigger respective vectorized is_ functions.}
 }
+\value{
+a logical vector
+}
 \description{
 Check if an object is of a class
 }

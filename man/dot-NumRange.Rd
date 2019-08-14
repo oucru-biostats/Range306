@@ -3,7 +3,7 @@
 \docType{data}
 \name{.NumRange}
 \alias{.NumRange}
-\title{Continuous Numeric Range Class}
+\title{R6 Class Generator for Continuous Numeric Range}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 NR

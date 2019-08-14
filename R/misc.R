@@ -1,3 +1,3 @@
 `%|%` <- function(lhs, rhs){
-  ifelse(falsified(lhs), rhs, lhs)
+  ifelse(is_falsified(lhs), rhs, lhs)
 }
