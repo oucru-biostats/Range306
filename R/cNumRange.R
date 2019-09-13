@@ -194,9 +194,9 @@ is_NumRange <- is.NumRange <- function(x){
 #' @aliases is.NullRange
 #' @param x a numeric range of R6Class 'NumRange'
 #' @return a logical value
-is_NullRange <- is.NullRange <- function(x){
-  if (!is_(x, 'NumRange')) stop('x should be of class NumRange')
-  all(is_null(x$extract()))
+is_EmptyRange <- is.EmptyRange <- function(x){
+  if (!inherits(x, 'NumRange')) stop('x should be of class NumRange')
+  all(is_null(x$split()))
 }
 
 #' Check if two numeric ranges are identical
